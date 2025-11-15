@@ -1,14 +1,16 @@
 // app/pricing/page.tsx
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Sparkles, TrendingUp } from "lucide-react";
 import PricingTable, { type BillingCycle } from "@/components/PricingTable";
 import PricingFAQ from "@/components/PricingFAQ";
 
-export default function PricingPage() {
+// This inner component is where ALL your existing logic now lives.
+// It’s the one that uses `useSearchParams`, and it sits inside <Suspense>.
+function PricingContent() {
   // ✅ hooks live *inside* the component
   const params = useSearchParams();
   const planParam = params.get("plan") as "starter" | "pro" | "advanced" | null;
@@ -134,6 +136,25 @@ export default function PricingPage() {
     </main>
   );
 }
+
+// The page component itself is now just a Suspense boundary
+// that renders the hook-using PricingContent.
+export default function PricingPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="bg-gradient-to-b from-white via-slate-50 to-white">
+          <section className="container py-20 text-center">
+            <p className="text-sm text-brand-ink/60">Loading pricing…</p>
+          </section>
+        </main>
+      }
+    >
+      <PricingContent />
+    </Suspense>
+  );
+}
+
 
 
 
