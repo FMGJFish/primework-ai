@@ -1,0 +1,4 @@
+lead_name,lead_email,lead_phone,source,status,next_step
+Alex Johnson,alex@acme.com,+1 555-123-4567,Website Form,new,"Book 15-min audit"
+Maria Lopez,maria@studiohq.io,,Instagram DMs,follow-up,"Send proposal"
+Sam Patel,sam@retailpro.com,+1 222-555-9876,Website Chat,qualified,"Schedule onboarding call"

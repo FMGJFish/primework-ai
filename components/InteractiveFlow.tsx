@@ -280,7 +280,13 @@ export default function InteractiveFlow() {
           <div>
             <p className="text-sm text-brand-ink/70">Append this flow to Google Sheets / CRM.</p>
             <button onClick={doLogToSheets} className="btn btn-primary mt-4">Log to Sheet</button>
-            <a href="/api/export" className="btn btn-outline mt-3">Download CSV</a>
+            <a
+              href="/sample-lead-pipeline.csv"
+              download
+              className="btn btn-outline"
+            >
+             Download CSV
+            </a>
           </div>
         );
 
