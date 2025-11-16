@@ -16,10 +16,47 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Primework AI — Where your work flows.",
+  metadataBase: new URL("https://primeworkai.com"),
+  title: {
+    default: "Primework AI – Automations. Websites. Growth.",
+    template: "%s • Primework AI",
+  },
   description:
-    "Primework AI connects your chat, inbox, payments, and tracking so leads get answered, owners get alerted, and invoices get sent automatically.",
+    "Primework AI builds automation systems, websites, and workflows that save time and grow revenue. Book a 15-min audit today.",
+  keywords: [
+    "AI automations",
+    "AI workflows",
+    "automation agency",
+    "website design",
+    "AI for small business",
+    "Primework AI",
+  ],
+  openGraph: {
+    title: "Primework AI – Automations. Websites. Growth.",
+    description:
+      "We build automation systems and websites that save time and increase revenue. Book a 15-min audit.",
+    url: "https://primeworkai.com",
+    siteName: "Primework AI",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "Primework AI – Automations & Websites",
+      },
+    ],
+    locale: "en_US",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Primework AI – Automations & Websites",
+    description:
+      "Automation systems + modern websites for business owners.",
+    images: ["/og-image.png"],
+  },
 };
+
 
 export default function RootLayout({
   children,
