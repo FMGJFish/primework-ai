@@ -55,6 +55,11 @@ export const metadata: Metadata = {
       "Automation systems + modern websites for business owners.",
     images: ["/og-image.png"],
   },
+  icons: {
+    icon: "/icon.png",
+    shortcut: "/favicon.ico",
+    apple: "/icon.png",
+  },
 };
 
 
