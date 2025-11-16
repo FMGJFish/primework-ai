@@ -6,6 +6,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { AuditButton } from "@/components/AuditButton";
 import NavMenuIcon from "@/components/NavMenuIcon";
+import { AnimatePresence, motion } from "framer-motion";
 
 
 const navLinks = [
@@ -84,35 +85,44 @@ export default function Header() {
       </header>
 
       {/* Mobile dropdown panel */}
-      {menuOpen && (
-  <div className="md:hidden border-b border-black/5 bg-white/95 backdrop-blur shadow-sm">
-    <div className="container py-3 flex flex-col gap-1">
-      {navLinks.map((link) => {
-        const isActive =
-          link.href === "/"
-            ? pathname === "/"
-            : pathname.startsWith(link.href);
-
-        return (
-          <Link
-            key={link.href}
-            href={link.href}
-            onClick={closeMenu}
-            className={
-              "py-2 text-sm font-medium rounded-lg px-2 " +
-              (isActive
-                ? "bg-[var(--brand-accent)]/5 text-[var(--brand-accent)]"
-                : "text-[var(--color-ink)] hover:bg-slate-100")
-            }
+      {/* Mobile dropdown panel — fixed under the header with animation */}
+      <AnimatePresence>
+        {menuOpen && (
+          <motion.div
+            key="mobile-nav"
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.18, ease: "easeOut" }}
+            className="fixed inset-x-0 top-14 z-40 md:hidden bg-white/95 backdrop-blur border-b border-black/5 shadow-lg"
           >
-            {link.label}
-          </Link>
-        );
-      })}
-    </div>
-  </div>
-)}
+            <div className="container py-3 flex flex-col gap-1 max-h-[calc(100vh-3.5rem)] overflow-y-auto">
+              {navLinks.map((link) => {
+                const isActive =
+                  link.href === "/"
+                    ? pathname === "/"
+                    : pathname.startsWith(link.href);
 
+                return (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    onClick={closeMenu}
+                    className={
+                      "py-2 text-sm font-medium rounded-lg px-2 " +
+                      (isActive
+                        ? "bg-[var(--brand-accent)]/5 text-[var(--brand-accent)]"
+                        : "text-[var(--color-ink)] hover:bg-slate-100")
+                    }
+                  >
+                    {link.label}
+                  </Link>
+                );
+              })}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </>
   );
 }
