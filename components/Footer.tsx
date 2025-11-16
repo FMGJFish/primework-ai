@@ -1,4 +1,5 @@
 import Link from "next/link";
+import SocialIcons from "@/components/SocialIcons";
 
 export default function Footer() {
   return (
@@ -10,7 +11,7 @@ export default function Footer() {
           <div className="font-semibold mb-2">Primework AI</div>
           <p className="text-sm text-gray-300 leading-relaxed">
             We optimize the work that runs your business — powered by AI.
-          </p>
+          </p>         
         </div>
 
         {/* Nav */}
@@ -21,7 +22,6 @@ export default function Footer() {
             <li><Link href="/web-development" className="footer-link">Web Development</Link></li>
             <li><Link href="/pricing" className="footer-link">Pricing</Link></li>
             <li><Link href="/contact" className="footer-link">Contact</Link></li>
-
           </ul>
         </div>
 
@@ -33,10 +33,11 @@ export default function Footer() {
             <li><Link href="/terms" className="footer-link">Terms</Link></li>
           </ul>
         </div>
+        <SocialIcons />
       </div>
-
+      
       <div className="border-t border-white/10 py-6 text-center text-xs text-gray-400">
-        © {new Date().getFullYear()} Primework AI. All rights reserved.
+        © {new Date().getFullYear()} Primework AI. All rights reserved.       
       </div>
     </footer>
   );
