@@ -31,7 +31,6 @@ type ContactBody = {
   utmContent?: string;
 };
 
-
 type FormStatus = "idle" | "submitting" | "success" | "error";
 
 type FieldErrors = {
@@ -39,6 +38,9 @@ type FieldErrors = {
   email?: string;
   message?: string;
 };
+
+// NEW: finer-grained phases for UX messaging
+type SubmitPhase = "idle" | "verifying" | "analyzing" | "success" | "error";
 
 export default function ContactForm() {
   const searchParams = useSearchParams();
@@ -51,46 +53,48 @@ export default function ContactForm() {
   }
 
   const [form, setForm] = useState<ContactBody>({
-  name: "",
-  email: "",
-  phone: "",
-  message: "",
-  honeypot: "",
-  startedAt: Date.now(),
+    name: "",
+    email: "",
+    phone: "",
+    message: "",
+    honeypot: "",
+    startedAt: Date.now(),
 
-  pageUrl: "",
-  referrer: "",
-  utmSource: "",
-  utmMedium: "",
-  utmCampaign: "",
-  utmTerm: "",
-  utmContent: "",
-});
-
+    pageUrl: "",
+    referrer: "",
+    utmSource: "",
+    utmMedium: "",
+    utmCampaign: "",
+    utmTerm: "",
+    utmContent: "",
+  });
 
   const [status, setStatus] = useState<FormStatus>("idle");
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
 
+  // NEW: phase + note for better feedback
+  const [submitPhase, setSubmitPhase] = useState<SubmitPhase>("idle");
+  const [submitNote, setSubmitNote] = useState<string | null>(null);
+
   // Capture page URL, referrer, and UTM params once on mount
-useEffect(() => {
-  if (typeof window === "undefined") return;
+  useEffect(() => {
+    if (typeof window === "undefined") return;
 
-  const url = new URL(window.location.href);
-  const params = url.searchParams;
+    const url = new URL(window.location.href);
+    const params = url.searchParams;
 
-  setForm((prev) => ({
-    ...prev,
-    pageUrl: url.href,
-    referrer: document.referrer || "",
-    utmSource: params.get("utm_source") || "",
-    utmMedium: params.get("utm_medium") || "",
-    utmCampaign: params.get("utm_campaign") || "",
-    utmTerm: params.get("utm_term") || "",
-    utmContent: params.get("utm_content") || "",
-  }));
-}, []);
-
+    setForm((prev) => ({
+      ...prev,
+      pageUrl: url.href,
+      referrer: document.referrer || "",
+      utmSource: params.get("utm_source") || "",
+      utmMedium: params.get("utm_medium") || "",
+      utmCampaign: params.get("utm_campaign") || "",
+      utmTerm: params.get("utm_term") || "",
+      utmContent: params.get("utm_content") || "",
+    }));
+  }, []);
 
   // Pre-fill message based on ?service=, ?plan=, ?addons=, ?webPackage=
   useEffect(() => {
@@ -164,6 +168,8 @@ useEffect(() => {
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setStatus("submitting");
+    setSubmitPhase("verifying");
+    setSubmitNote("Verifying you’re human…");
     setError(null);
 
     // 🔎 1) Basic client-side validation
@@ -190,6 +196,8 @@ useEffect(() => {
     if (Object.keys(newErrors).length > 0) {
       setFieldErrors(newErrors);
       setStatus("idle");
+      setSubmitPhase("idle");
+      setSubmitNote(null);
       return;
     }
 
@@ -211,6 +219,8 @@ useEffect(() => {
 
     if (!token) {
       setStatus("error");
+      setSubmitPhase("error");
+      setSubmitNote("Please complete the reCAPTCHA before submitting.");
       setError("Please complete the reCAPTCHA before submitting.");
       return;
     }
@@ -221,6 +231,10 @@ useEffect(() => {
     };
 
     try {
+      // NEW: we’ve passed validation + have a token → AI/Apps Script work now
+      setSubmitPhase("analyzing");
+      setSubmitNote("Analyzing your message with AI (usually 1–3 seconds)…");
+
       const resp = await fetch("/api/contact", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -247,6 +261,10 @@ useEffect(() => {
 
       // ✅ Success
       setStatus("success");
+      setSubmitPhase("success");
+      setSubmitNote(
+        "Got it! We’ll review your message and follow up shortly."
+      );
       setError(null);
 
       setForm((prev) => ({
@@ -259,7 +277,6 @@ useEffect(() => {
         startedAt: Date.now(),
       }));
 
-
       // Optional: visually reset reCAPTCHA
       if (typeof window !== "undefined" && window.grecaptcha) {
         try {
@@ -271,6 +288,7 @@ useEffect(() => {
     } catch (err) {
       console.error(err);
       setStatus("error");
+      setSubmitPhase("error");
 
       const message =
         err instanceof Error
@@ -278,10 +296,30 @@ useEffect(() => {
           : "Something went wrong. Please try again in a moment.";
 
       setError(message);
+      setSubmitNote(message);
     }
   }
 
   const isSubmitting = status === "submitting";
+
+  // NEW: smarter button label based on phase
+  let buttonLabel = "Send message";
+  if (submitPhase === "verifying") {
+    buttonLabel = "Verifying you’re human…";
+  } else if (submitPhase === "analyzing") {
+    buttonLabel = "Analyzing with AI (1–3 seconds)…";
+  } else if (submitPhase === "success") {
+    buttonLabel = "Sent!";
+  } else if (submitPhase === "error") {
+    buttonLabel = isSubmitting ? "Sending..." : "Try again";
+  } else if (isSubmitting) {
+    buttonLabel = "Sending...";
+  }
+
+  const isBusy =
+    isSubmitting ||
+    submitPhase === "verifying" ||
+    submitPhase === "analyzing";
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -297,6 +335,11 @@ useEffect(() => {
         <div className="rounded-2xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-900">
           {error}
         </div>
+      )}
+
+      {/* NEW: soft status note under the banners */}
+      {submitNote && (
+        <p className="text-xs text-slate-500">{submitNote}</p>
       )}
 
       <input type="hidden" name="startedAt" value={form.startedAt} />
@@ -411,7 +454,7 @@ useEffect(() => {
         )}
       </div>
 
-       {/* ✅ reCAPTCHA widget (v2 checkbox) */}
+      {/* ✅ reCAPTCHA widget (v2 checkbox) */}
       {recaptchaSiteKey && (
         <div className="mt-2">
           <div
@@ -421,17 +464,17 @@ useEffect(() => {
         </div>
       )}
 
-
       <button
         type="submit"
-        disabled={isSubmitting}
+        disabled={isBusy}
         className="btn btn-primary"
       >
-        {isSubmitting ? "Sending..." : "Send message"}
+        {buttonLabel}
       </button>
     </form>
   );
 }
+
 
 
 
