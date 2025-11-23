@@ -8,12 +8,38 @@ type ContactBody = {
   message: string;
   honeypot?: string;   // hidden field on the form
   startedAt?: number;  // timestamp when the user first saw the form
+  recaptchaToken?: string;
+
+  pageUrl?: string;
+  referrer?: string;
+  utmSource?: string;
+  utmMedium?: string;
+  utmCampaign?: string;
+  utmTerm?: string;
+  utmContent?: string;
+
 };
 
 export async function POST(req: Request) {
   try {
     const body = (await req.json()) as Partial<ContactBody>;
-    const { name, email, phone, message, honeypot, startedAt } = body || {};
+    const {
+      name,
+      email,
+      phone,
+      message,
+      honeypot,
+      startedAt,
+      recaptchaToken,
+      pageUrl,
+      referrer,
+      utmSource,
+      utmMedium,
+      utmCampaign,
+      utmTerm,
+      utmContent,
+    } = body || {};
+
 
     // --- Anti-spam guards ---------------------------------------
 
@@ -46,13 +72,17 @@ export async function POST(req: Request) {
 
     // --- 1) Forward to Google Apps Script Web App (logs to Google Sheet) ---
 
-    const webhook = process.env.CONTACT_SHEET_WEBHOOK;
-    if (!webhook) {
-      return NextResponse.json(
-        { error: "CONTACT_SHEET_WEBHOOK is not set." },
-        { status: 500 }
-      );
-    }
+const webhook = process.env.CONTACT_SHEET_WEBHOOK;
+console.log("CONTACT_SHEET_WEBHOOK:", webhook); // ✅ log output
+
+if (!webhook) {
+  console.error("❌ Missing CONTACT_SHEET_WEBHOOK in environment variables.");
+  return NextResponse.json(
+    { error: "CONTACT_SHEET_WEBHOOK is not set." },
+    { status: 500 }
+  );
+}
+
 
     const payload = {
       timestamp: new Date().toISOString(),
@@ -60,19 +90,55 @@ export async function POST(req: Request) {
       email,
       phone: phone ?? "",
       message,
-      source: "primeworkai.com/contact",
+      source: pageUrl || "", // used in Apps Script as Page URL
+      referrer: referrer || "",
+      utmSource: utmSource || "",
+      utmMedium: utmMedium || "",
+      utmCampaign: utmCampaign || "",
+      utmTerm: utmTerm || "",
+      utmContent: utmContent || "",
+      startedAt,
+      recaptchaToken: recaptchaToken ?? "", // ✅ pass token to GScript
     };
 
     const resp = await fetch(webhook, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify(payload),
+});
 
-    if (!resp.ok) {
-      const text = await resp.text();
-      throw new Error(`Webhook failed: ${text}`);
-    }
+// Read the body whether or not resp.ok is true
+const rawText = await resp.text();
+
+let okFlag = true;
+let backendError = "";
+
+try {
+  const json = JSON.parse(rawText);
+  // Apps Script returns { ok: false, error: "..." } for duplicates
+  okFlag = json.ok !== false;
+  backendError = json.error || "";
+} catch {
+  // not JSON, fall back to raw text
+  okFlag = resp.ok;
+  backendError = rawText;
+}
+
+// If HTTP failed OR backend flagged an error, treat as failure
+if (!resp.ok || !okFlag) {
+  const rawMsg = backendError || "Unknown error from lead logger.";
+
+  if (rawMsg.includes("Duplicate entry detected")) {
+    // Give the user a friendly, specific message
+    throw new Error(
+      "Looks like we already received this exact message recently. " +
+        "If you need to add more details, tweak your message and send again."
+    );
+  }
+
+  throw new Error(rawMsg);
+}
+
 
     // --- 2) Optional: owner email via Resend (unchanged) ---
 

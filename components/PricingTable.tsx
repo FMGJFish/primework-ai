@@ -8,7 +8,17 @@ import { Rocket, Zap, Crown, CheckCircle2 } from "lucide-react";
 export type BillingCycle = "monthly" | "annual";
 type PlanKey = "starter" | "pro" | "advanced";
 
-/* ---------------- AI AUTOMATION PLANS (unchanged) ---------------- */
+type PricingTableProps = {
+  billing?: BillingCycle;
+  selected?: PlanKey;
+  onSelectPlan?: (planKey: PlanKey, planLabel: string) => void;
+
+  // NEW: for web dev selection
+  selectedWebDevKey?: string | null;
+  onSelectWebDevPlan?: (webKey: string, webLabel: string) => void;
+};
+
+/* ---------------- AI AUTOMATION PLANS ---------------- */
 
 const PLANS: Array<{
   key: PlanKey;
@@ -16,21 +26,21 @@ const PLANS: Array<{
   icon: LucideIcon;
   blurb: string;
   price: {
-    monthly: number; // per month
-    annual: number; // per month (effective) when billed yearly
+    monthly: number;
+    annual: number;
   };
-  annualBillTotal: number; // the actual annual charge ($/yr)
-  setupFee?: number;       // one-time setup fee
+  annualBillTotal: number;
+  setupFee?: number;
   features: string[];
   ctaHref: string;
 }> = [
   {
     key: "starter",
-    name: "Starter",
+    name: "Essentials",
     icon: Rocket,
     blurb: "Get the basics live fast.",
     price: { monthly: 49, annual: 39 },
-    annualBillTotal: 468, // 39 * 12
+    annualBillTotal: 468,
     setupFee: 199,
     features: [
       "AI lead capture + instant replies",
@@ -41,11 +51,11 @@ const PLANS: Array<{
   },
   {
     key: "pro",
-    name: "Pro",
+    name: "Growth",
     icon: Zap,
     blurb: "Add payments and tracking.",
     price: { monthly: 149, annual: 119 },
-    annualBillTotal: 1428, // 119 * 12
+    annualBillTotal: 1428,
     setupFee: 399,
     features: [
       "Everything in Starter",
@@ -57,11 +67,11 @@ const PLANS: Array<{
   },
   {
     key: "advanced",
-    name: "Advanced",
+    name: "Scale",
     icon: Crown,
     blurb: "End-to-end system with exports.",
     price: { monthly: 299, annual: 249 },
-    annualBillTotal: 2988, // 249 * 12
+    annualBillTotal: 2988,
     setupFee: 699,
     features: [
       "Everything in Pro",
@@ -73,7 +83,7 @@ const PLANS: Array<{
   },
 ];
 
-/* ---------------- WEB DEV PACKAGES (new) ---------------- */
+/* ---------------- WEB DEV PACKAGES ---------------- */
 
 type WebDevPlan = {
   key: string;
@@ -88,38 +98,39 @@ const WEB_DEV_PLANS: WebDevPlan[] = [
   {
     key: "wd-landing",
     name: "Launch Landing",
-    label: "From $750 one-time",
+    label: "From $300 one-time",
     blurb: "Single high-impact page wired to your lead + booking flow.",
     features: [
       "Custom landing page tailored to one clear offer",
       "Mobile-first build on your stack (Wix, Webflow, Next, etc.)",
       "Contact / lead form connected to Sheets or CRM",
     ],
-    ctaHref: "/contact?service=web-dev&package=launch-landing",
+    // use human-readable webPackage param
+    ctaHref: "/contact?service=web-dev&webPackage=Launch%20Landing",
   },
   {
     key: "wd-core",
     name: "Core Site (3–5 pages)",
-    label: "From $1,500 one-time",
+    label: "From $500 one-time",
     blurb: "A full mini-site focused on answering questions and booking work.",
     features: [
       "Home, About, Services, Contact + 1 extra page",
       "Lead forms + chat connected to automations",
       "Basic SEO structure + analytics setup",
     ],
-    ctaHref: "/contact?service=web-dev&package=core-site",
+    ctaHref: "/contact?service=web-dev&webPackage=Core%20Site%20(3–5%20pages)",
   },
   {
     key: "wd-pro",
     name: "Site + Automation Pro",
-    label: "From $2,500 one-time",
+    label: "From $1,500 one-time",
     blurb: "Deeper site plus advanced workflows built in from day one.",
     features: [
       "Up to ~8 pages with section-based layouts",
       "Booking, payments, and follow-up flows wired in",
       "Custom lead routing / tagging in Sheets or CRM",
     ],
-    ctaHref: "/contact?service=web-dev&package=pro-site",
+    ctaHref: "/contact?service=web-dev&webPackage=Site%20+%20Automation%20Pro",
   },
   {
     key: "wd-custom",
@@ -131,7 +142,7 @@ const WEB_DEV_PLANS: WebDevPlan[] = [
       "Scoped proposal with timeline and milestones",
       "Priority support during launch window",
     ],
-    ctaHref: "/contact?service=web-dev&package=custom-build",
+    ctaHref: "/contact?service=web-dev&webPackage=Custom%20Build",
   },
 ];
 
@@ -146,10 +157,10 @@ function formatUSD(n: number) {
 export default function PricingTable({
   selected,
   billing = "monthly",
-}: {
-  selected?: PlanKey;
-  billing?: BillingCycle;
-}) {
+  onSelectPlan,
+  selectedWebDevKey,
+  onSelectWebDevPlan,
+}: PricingTableProps) {
   return (
     <div className="space-y-16">
       {/* AI AUTOMATION PLANS */}
@@ -174,12 +185,13 @@ export default function PricingTable({
             return (
               <div
                 key={key}
+                onClick={() => onSelectPlan?.(key, name)}
                 className={`relative bg-white rounded-3xl border border-black/5 
-              shadow-[0_8px_40px_-8px_rgba(0,0,0,0.05)] 
-              hover:shadow-[0_8px_60px_-8px_rgba(0,0,0,0.12)] 
-              hover:-translate-y-1 transition-all duration-300 p-8 text-left
-              ${isSelected ? "ring-2 ring-brand-accent" : ""}
-            `}
+                  shadow-[0_8px_40px_-8px_rgba(0,0,0,0.05)] 
+                  hover:shadow-[0_8px_60px_-8px_rgba(0,0,0,0.12)] 
+                  hover:-translate-y-1 transition-all duration-300 p-8 text-left
+                  cursor-pointer
+                  ${isSelected ? "ring-2 ring-brand-accent" : ""}`}
               >
                 {isPopular && (
                   <span className="absolute top-4 right-4 bg-gradient-to-r from-brand-accent to-brand-accent/80 text-white text-xs font-semibold px-3 py-1 rounded-full shadow-sm">
@@ -202,14 +214,14 @@ export default function PricingTable({
                     </span>
                   </div>
 
-                {typeof setupFee === "number" && setupFee > 0 && (
-                  <p className="mt-1 text-xs text-brand-ink/70">
-                    + {formatUSD(setupFee)} one-time setup
-                  </p>
-                )}
+                  {typeof setupFee === "number" && setupFee > 0 && (
+                    <p className="mt-1 text-xs text-brand-ink/70">
+                      + {formatUSD(setupFee)} one-time setup
+                    </p>
+                  )}
 
                   <p className="mt-1 text-brand-ink/70">{blurb}</p>
-                  
+
                   {billing === "annual" && (
                     <p className="mt-1 text-xs text-brand-ink/60">
                       Billed annually at {formatUSD(annualBillTotal)}/yr
@@ -232,6 +244,9 @@ export default function PricingTable({
                 <Link
                   href={ctaHref}
                   className="mt-6 inline-block btn btn-primary w-full text-center hover:bg-brand-accent/90 transition-colors"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                  }}
                 >
                   Get Started
                 </Link>
@@ -266,47 +281,59 @@ export default function PricingTable({
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 ">
-          {WEB_DEV_PLANS.map((plan) => (
-            <div
-              key={plan.key}
-              className="bg-white rounded-3xl border border-black/5 p-6 shadow-[0_6px_30px_-8px_rgba(0,0,0,0.06)] text-left bg-white rounded-3xl border border-black/5 p-6 
-                          shadow-[0_6px_30px_-8px_rgba(0,0,0,0.06)]
-                          hover:-translate-y-1 hover:shadow-[0_10px_40px_-10px_rgba(0,0,0,0.12)]
-                          transition-transform duration-300"
-            >
-              <h3 className="text-lg font-semibold text-brand-ink">
-                {plan.name}
-              </h3>
-              <p className="mt-1 text-sm font-medium text-brand-accent">
-                {plan.label}
-              </p>
-              <p className="mt-2 text-sm text-brand-ink/70">{plan.blurb}</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {WEB_DEV_PLANS.map((plan) => {
+            const isSelected = selectedWebDevKey === plan.key;
 
-              <ul className="mt-4 space-y-2 text-xs text-brand-ink/80">
-                {plan.features.map((f) => (
-                  <li key={f} className="flex items-start gap-2">
-                    <CheckCircle2
-                      className="w-4 h-4 text-brand-accent mt-0.5 shrink-0"
-                    />
-                    <span>{f}</span>
-                  </li>
-                ))}
-              </ul>
-
-              <Link
-                href={plan.ctaHref}
-                className="mt-6 inline-block btn btn-outline w-full text-center"
+            return (
+              <div
+                key={plan.key}
+                onClick={() =>
+                  onSelectWebDevPlan?.(plan.key, plan.name)
+                }
+                className={`bg-white rounded-3xl border border-black/5 p-6 
+                           shadow-[0_6px_30px_-8px_rgba(0,0,0,0.06)]
+                           hover:-translate-y-1 hover:shadow-[0_10px_40px_-10px_rgba(0,0,0,0.12)]
+                           transition-transform duration-300 text-left cursor-pointer
+                           ${isSelected ? "ring-2 ring-brand-accent" : ""}`}
               >
-                Discuss this package →
-              </Link>
-            </div>
-          ))}
+                <h3 className="text-lg font-semibold text-brand-ink">
+                  {plan.name}
+                </h3>
+                <p className="mt-1 text-sm font-medium text-brand-accent">
+                  {plan.label}
+                </p>
+                <p className="mt-2 text-sm text-brand-ink/70">{plan.blurb}</p>
+
+                <ul className="mt-4 space-y-2 text-xs text-brand-ink/80">
+                  {plan.features.map((f) => (
+                    <li key={f} className="flex items-start gap-2">
+                      <CheckCircle2
+                        className="w-4 h-4 text-brand-accent mt-0.5 shrink-0"
+                      />
+                      <span>{f}</span>
+                    </li>
+                  ))}
+                </ul>
+
+                <Link
+                  href={plan.ctaHref}
+                  className="mt-6 inline-block btn btn-outline w-full text-center"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                  }}
+                >
+                  Discuss this package →
+                </Link>
+              </div>
+            );
+          })}
         </div>
       </section>
     </div>
   );
 }
+
 
           
 
