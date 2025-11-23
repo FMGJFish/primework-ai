@@ -43,6 +43,13 @@ type FieldErrors = {
 export default function ContactForm() {
   const searchParams = useSearchParams();
 
+  const recaptchaSiteKey =
+    process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || "";
+
+  if (!recaptchaSiteKey && typeof window !== "undefined") {
+    console.warn("⚠️ Missing NEXT_PUBLIC_RECAPTCHA_SITE_KEY in env");
+  }
+
   const [form, setForm] = useState<ContactBody>({
   name: "",
   email: "",
@@ -119,6 +126,10 @@ useEffect(() => {
       if (plan === "starter") prettyPlan = "Essentials";
       else if (plan === "pro") prettyPlan = "Growth";
       else if (plan === "advanced") prettyPlan = "Scale";
+      else {
+        // If plan came in as "AI Automation – Growth" or "Essentials", just use it as-is
+        prettyPlan = plan;
+      }
 
       if (addons && addons.trim().length > 0) {
         pieces.push(
@@ -400,13 +411,15 @@ useEffect(() => {
         )}
       </div>
 
-            {/* ✅ reCAPTCHA widget (v2 checkbox) */}
-      <div className="mt-2">
-        <div
-          className="g-recaptcha"
-          data-sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || ""}
-        />
-      </div>
+       {/* ✅ reCAPTCHA widget (v2 checkbox) */}
+      {recaptchaSiteKey && (
+        <div className="mt-2">
+          <div
+            className="g-recaptcha"
+            data-sitekey={recaptchaSiteKey}
+          />
+        </div>
+      )}
 
 
       <button
